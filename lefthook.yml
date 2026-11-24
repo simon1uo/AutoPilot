@@ -1,0 +1,5 @@
+# Git hooks 由 lefthook 管理；安装: npm install (会自动 lefthook install)
+commit-msg:
+  commands:
+    commitlint:
+      run: npx --no -- commitlint --edit {1}

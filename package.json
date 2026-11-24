@@ -1,0 +1,15 @@
+{
+  "name": "autopilot-repo-tooling",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Commit/release tooling for AutoPilot (commitlint + lefthook)",
+  "scripts": {
+    "commitlint": "commitlint --edit",
+    "prepare": "lefthook install || true"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "lefthook": "^1.8.2"
+  }
+}

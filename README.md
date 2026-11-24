@@ -1,23 +1,48 @@
+<div align="center">
+
+<img src="docs/icon-512.png" width="120" alt="AutoPilot icon" />
+
 # AutoPilot
 
-极简 Android 自动化：**定时 → 唤醒屏幕 → 打开指定 App** 一条龙。
-开源、免费、无订阅。一个专注于「定时 → 唤醒屏幕 → 打开 App」的极简自动化工具。
+**极简 Android 自动化 · 定时 → 唤醒屏幕 → 编排动作**  
+*Minimal Android automation — scheduled wake + action sequences*
 
-## 功能
-- 📋 任务列表：启停 / 立即执行 / 删除
-- ⏰ 定时规则：每天 HH:mm + 选星期几，或 **每 N 分钟/小时** 重复
-- 🧩 **多动作序列**：一个任务可编排多个动作，按顺序执行，支持添加/删除/上移下移排序
+[![CI](https://github.com/simon1uo/AutoPilot/actions/workflows/ci.yml/badge.svg)](https://github.com/simon1uo/AutoPilot/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/simon1uo/AutoPilot?include_prereleases&sort=semver)](https://github.com/simon1uo/AutoPilot/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-D6FF3F.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Android-8.0%2B%20(API%2026)-D6FF3F.svg)](#)
+[![Kotlin](https://img.shields.io/badge/Kotlin-Compose-7F52FF?logo=kotlin&logoColor=white)](#)
+
+[中文](#-中文) · [English](#-english) · [截图](#-截图--screenshots) · [贡献](CONTRIBUTING.md) · [发布](RELEASE.md)
+
+</div>
+
+---
+
+## 🇨🇳 中文
+
+AutoPilot 是一款**开源、免费、无订阅**的轻量 Android 自动化工具。它专注于一件简单的事：
+**在指定时间自动唤醒屏幕，并按顺序执行一串动作**（打开 App、调音量、等待、发通知等）。
+
+灵感来自「定时唤醒 + 打开应用」这类高频场景，但比同类应用更简洁、更可控，且**支持脚本化远程控制**。
+
+### ✨ 功能
+- 📋 **任务列表**：启停 / 立即执行 / 删除
+- ⏰ **定时规则**：每天 HH:mm + 选星期几，或「每 N 分钟/小时」重复
+- 🧩 **多动作序列**：一个任务可编排多个动作，按顺序执行，支持添加 / 删除 / 排序
   - 动作类型：唤醒屏幕 · 启动 App · 等待 · 调节音量 · WiFi 开关 · 蓝牙开关 · 发送通知 · 提示音/震动
-- 🌅 到点执行：精确闹钟唤醒 → 按序列执行动作
-- 🌐 内建 HTTP 控制服务（默认 :8080），脚本化增删改查、立即执行
-- 📡 ADB 直通控制（am broadcast）
-- 🔋 开机自动恢复所有任务
-- 🎨 极简黑白 + 荧光绿 UI（Material 3）
-- 🔄 v1 旧任务自动迁移到新动作格式
+- 🌅 **到点执行**：精确闹钟唤醒（可在待机中触发）→ 按序列执行动作
+- 🌐 **内建 HTTP 控制服务**（默认 :8080）：脚本化增删改查、立即执行
+- 📡 **ADB 直通**：`am broadcast` 命令控制，测试无需手动点屏幕
+- 🔋 **开机自动恢复**所有任务
+- 🎨 **极简黑白 + 荧光绿** UI（Material 3）
 
-## 快速开始（开发）
+### 📥 下载
+前往 [Releases](https://github.com/simon1uo/AutoPilot/releases) 下载最新 APK。
+
+### 🚀 构建
 ```bash
-# 需要 JDK 21、Android SDK (build-tools 35/36, platform 36)
+# 需要 JDK 21 + Android SDK (build-tools 35+, platform 36)
 export JAVA_HOME=/path/to/jdk-21
 export ANDROID_HOME=$HOME/Library/Android/sdk
 cd app
@@ -25,49 +50,82 @@ cd app
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## 使用
-1. 首次打开授予**精确闹钟**权限（Android 12+）。
-2. 点「新建任务」→ 选时间/星期 → 选目标 App → 保存。
-3. 到点自动亮屏并打开 App。
+### 🌐 HTTP 控制 API
+服务默认在 `http://<手机IP>:8080`（App 在前台时自动启动）：
 
-## HTTP 控制 API
-服务启动后在手机同网段访问 `http://<手机IP>:8080`：
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| GET | /api/health | 健康检查 |
-| GET | /api/tasks | 列出所有任务 |
-| POST | /api/tasks | 新建任务(body为Task JSON) |
-| POST | /api/tasks/{id}/trigger | 立即触发 |
-| POST | /api/tasks/{id}/toggle | 启停切换 |
-| DELETE | /api/tasks/{id} | 删除 |
+| GET | `/api/health` | 健康检查 |
+| GET | `/api/tasks` | 列出所有任务 |
+| POST | `/api/tasks` | 新建任务（body 为 Task JSON） |
+| POST | `/api/tasks/{id}/trigger` | 立即执行 |
+| POST | `/api/tasks/{id}/toggle` | 启停切换 |
+| DELETE | `/api/tasks/{id}` | 删除 |
 
-启动服务：
-```bash
-adb shell am startservice -n io.github.simon1uo.autopilot/.control.HttpServerService
-```
-
-## ADB 直通
+### 📡 ADB 直通
 ```bash
 # 列出任务
 adb shell am broadcast -a io.github.simon1uo.autopilot.CONTROL \
   -n io.github.simon1uo.autopilot/.control.ControlReceiver --es cmd list
-# 立即触发
+# 立即执行
 adb shell am broadcast -a io.github.simon1uo.autopilot.CONTROL \
-  -n io.github.simon1uo.autopilot/.control.ControlReceiver --es cmd trigger --el id 123
-# 新建任务
-adb shell am broadcast -a io.github.simon1uo.autopilot.CONTROL \
-  -n io.github.simon1uo.autopilot/.control.ControlReceiver --es cmd create \
-  --es name "起床" --ei hour 7 --ei minute 0 \
-  --es pkg com.android.chrome
+  -n io.github.simon1uo.autopilot/.control.ControlReceiver --es cmd trigger --el id <id>
 ```
 
-## 技术栈
-Kotlin · Jetpack Compose · MVVM · NanoHTTPD · kotlinx.serialization · minSdk 26
+### 🧱 技术栈
+Kotlin · Jetpack Compose · MVVM · NanoHTTPD · kotlinx.serialization · minSdk 26 / targetSdk 36
 
-## 实现要点
-- 定时：`AlarmManager.setAlarmClock` / `setExactAndAllowWhileIdle`（精确闹钟，可在待机中唤醒）
-- 亮屏：`PowerManager.newWakeLock(SCREEN_BRIGHT_WAKE_LOCK | ACQUIRE_CAUSES_WAKEUP | ON_AFTER_RELEASE)`
-- 启动：`Intent(ACTION_MAIN) + setClassName + FLAG_ACTIVITY_NEW_TASK`
+---
 
-## License
-MIT
+## 🇬🇧 English
+
+AutoPilot is an **open-source, free, no-subscription** lightweight Android automation tool.
+It focuses on one simple job: **wake the screen at a scheduled time and run a sequence of actions**
+(launch an app, set volume, wait, send a notification, and more).
+
+### ✨ Features
+- 📋 **Task list** — enable/disable, run now, delete
+- ⏰ **Scheduling** — daily HH:mm with weekday selection, or repeat every N minutes/hours
+- 🧩 **Multi-action sequences** — chain multiple actions per task, executed in order; add / delete / reorder
+  - Action types: Wake screen · Launch app · Wait · Set volume · Wi-Fi toggle · Bluetooth toggle · Notify · Beep/vibrate
+- 🌅 **Fire on time** — exact alarm wake-up (works in Doze) → run the sequence
+- 🌐 **Built-in HTTP control server** (default :8080) — CRUD + trigger from scripts
+- 📡 **ADB control** — drive it via `am broadcast`, no tapping needed for tests
+- 🔋 **Restores all tasks on boot**
+- 🎨 **Minimal black & white + neon green** UI (Material 3)
+
+### 📥 Download
+Grab the latest APK from [Releases](https://github.com/simon1uo/AutoPilot/releases).
+
+### 🚀 Build
+```bash
+# Requires JDK 21 + Android SDK (build-tools 35+, platform 36)
+export JAVA_HOME=/path/to/jdk-21
+export ANDROID_HOME=$HOME/Library/Android/sdk
+cd app
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+### 🧱 Tech stack
+Kotlin · Jetpack Compose · MVVM · NanoHTTPD · kotlinx.serialization · minSdk 26 / targetSdk 36
+
+---
+
+## 📸 截图 / Screenshots
+
+<div align="center">
+
+| 任务列表 / Task list | 编辑任务 / Edit task | 动作序列 / Actions | 添加动作 / Add action |
+|:---:|:---:|:---:|:---:|
+| <img src="docs/screenshots/01-task-list.png" width="200"/> | <img src="docs/screenshots/02-task-edit.png" width="200"/> | <img src="docs/screenshots/03-task-actions.png" width="200"/> | <img src="docs/screenshots/04-add-action.png" width="200"/> |
+
+</div>
+
+---
+
+## 📄 License
+[MIT](LICENSE) © 2026 simon1uo
+
+## 🤝 Contributing
+见 [CONTRIBUTING.md](CONTRIBUTING.md)（Conventional Commits + SemVer）· See CONTRIBUTING.md
