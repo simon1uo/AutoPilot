@@ -31,15 +31,30 @@ object CoreActions {
         if (settings.notifyOnTaskRun) {
             notifyExtra(ctx, "AutoPilot", "任务「${task.name}」已执行", settings.notifySound)
         }
+        val stepLog = mutableListOf<String>()
+        var failed = 0
         for ((idx, a) in task.actions.withIndex()) {
-            if (!a.enabled) { Log.i(TAG, "  [$idx] skipped(disabled) ${a.type}"); continue }
+            if (!a.enabled) { Log.i(TAG, "  [$idx] skipped(disabled) ${a.type}"); stepLog.add("${a.type}: skipped"); continue }
             try {
                 Log.i(TAG, "  [$idx] exec ${a.type}")
                 execute(ctx, a)
+                stepLog.add("${a.type.label}: ok")
             } catch (e: Exception) {
+                failed++
                 Log.e(TAG, "  [$idx] action ${a.type} failed: ${e.message}")
+                stepLog.add("${a.type.label}: 失败 ${e.message}")
             }
         }
+        try {
+            io.github.simon1uo.autopilot.data.HistoryRepository(ctx).add(
+                io.github.simon1uo.autopilot.model.HistoryEntry(
+                    taskId = task.id, taskName = task.name,
+                    success = failed == 0,
+                    message = if (failed == 0) "执行成功 (${task.actions.size} 步)" else "$failed 步失败",
+                    stepLog = stepLog,
+                )
+            )
+        } catch (e: Exception) { Log.e(TAG, "history save failed: ${e.message}") }
     }
 
     private suspend fun execute(ctx: Context, a: Action) {

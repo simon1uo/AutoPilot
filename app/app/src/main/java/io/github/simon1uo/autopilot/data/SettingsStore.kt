@@ -37,4 +37,12 @@ class SettingsStore(ctx: Context) {
     var notifySound: Boolean
         get() = sp.getBoolean("notify_sound", true)
         set(v) = sp.edit().putBoolean("notify_sound", v).apply()
+
+    var autoCheckUpdate: Boolean
+        get() = sp.getBoolean("auto_check_update", true)
+        set(v) = sp.edit().putBoolean("auto_check_update", v).apply()
+
+    var lastCheckedUpdateVersion: String
+        get() = sp.getString("last_checked_update", "") ?: ""
+        set(v) = sp.edit().putString("last_checked_update", v).apply()
 }

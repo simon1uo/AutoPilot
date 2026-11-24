@@ -19,6 +19,8 @@ data class Task(
     val intervalMinutes: Int = 0,
     /* 动作序列（按顺序执行），默认给两个：亮屏 + 启动App */
     val actions: List<Action> = listOf(Action.wake(), Action.launch("", "", "")),
+    /* 列表展示顺序（越小越靠前） */
+    val order: Int = 0,
 ) {
     val hasAnyDay: Boolean get() = daysOfWeek.any { it }
     val timeText: String get() =

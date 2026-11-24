@@ -1,12 +1,13 @@
 package io.github.simon1uo.autopilot.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.simon1uo.autopilot.data.SettingsStore
 import io.github.simon1uo.autopilot.model.Task
 
-private enum class Screen { LIST, EDIT, SETTINGS, PRIVACY, LICENSES }
+private enum class Screen { LIST, EDIT, SETTINGS, PRIVACY, LICENSES, HISTORY }
 
 @Composable
 fun AutoPilotNav(vm: TaskViewModel = viewModel()) {
@@ -14,6 +15,17 @@ fun AutoPilotNav(vm: TaskViewModel = viewModel()) {
     var screen by remember { mutableStateOf(Screen.LIST) }
     var editing by remember { mutableStateOf<Task?>(null) }
     var creating by remember { mutableStateOf(false) }
+
+    // 统一处理系统返回键：非主页面稳定回到上一级，不跳出到别的 App
+    BackHandler(enabled = screen != Screen.LIST) {
+        when (screen) {
+            Screen.EDIT -> { creating = false; editing = null; screen = Screen.LIST }
+            Screen.PRIVACY, Screen.LICENSES -> screen = Screen.SETTINGS
+            Screen.SETTINGS -> { screen = Screen.LIST; vm.reload() }
+            Screen.HISTORY -> screen = Screen.LIST
+            Screen.LIST -> {}
+        }
+    }
 
     when (screen) {
         Screen.EDIT -> {
@@ -33,11 +45,13 @@ fun AutoPilotNav(vm: TaskViewModel = viewModel()) {
         )
         Screen.PRIVACY -> TextDocScreen("隐私政策 Privacy", PRIVACY_TEXT) { screen = Screen.SETTINGS }
         Screen.LICENSES -> TextDocScreen("开源许可 Licenses", LICENSES_TEXT) { screen = Screen.SETTINGS }
+        Screen.HISTORY -> HistoryScreen { screen = Screen.LIST }
         Screen.LIST -> TaskListScreen(
             vm = vm,
             onNew = { creating = true; editing = null; screen = Screen.EDIT },
             onEdit = { t -> editing = t; creating = false; screen = Screen.EDIT },
             onOpenSettings = { screen = Screen.SETTINGS },
+            onOpenHistory = { screen = Screen.HISTORY },
         )
     }
 }

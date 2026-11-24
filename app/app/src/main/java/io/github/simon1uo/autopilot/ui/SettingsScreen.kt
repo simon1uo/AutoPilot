@@ -28,6 +28,9 @@ import io.github.simon1uo.autopilot.control.HttpServerService
 import io.github.simon1uo.autopilot.data.SettingsStore
 import io.github.simon1uo.autopilot.data.TaskRepository
 import io.github.simon1uo.autopilot.engine.Permissions
+import io.github.simon1uo.autopilot.engine.UpdateChecker
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import io.github.simon1uo.autopilot.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +39,9 @@ fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
     var refresh by remember { mutableStateOf(0) }
+    val scope = rememberCoroutineScope()
+    var checking by remember { mutableStateOf(false) }
+    var updateResult by remember { mutableStateOf<UpdateChecker.Result?>(null) }
 
     Box(Modifier.fillMaxSize().background(Ink)) {
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
@@ -90,6 +96,37 @@ fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses
                     ActionRow(Icons.Outlined.DeleteSweep, "清空所有任务", "不可恢复，请谨慎", danger = true) {
                         TaskRepository(ctx).save(emptyList())
                         refresh++
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+
+                // ============= 版本更新 =============
+                SettingsSection("版本更新") {
+                    ToggleRow("启动时自动检查", "打开 App 时在后台检查新版本", store.autoCheckUpdate) { store.autoCheckUpdate = it }
+                    ActionRow(Icons.Outlined.SystemUpdate, if (checking) "检查中…" else "检查更新", "查询 GitHub 最新版本") {
+                        if (!checking) {
+                            checking = true
+                            scope.launch {
+                                updateResult = UpdateChecker.check()
+                                checking = false
+                            }
+                        }
+                    }
+                    updateResult?.let { r ->
+                        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+                            Column {
+                                if (r.error != null) {
+                                    Text("检查失败：${r.error}", color = DangerRed, style = MaterialTheme.typography.bodySmall)
+                                } else if (r.hasUpdate) {
+                                    Text("发现新版本 v${r.latestVersion}（当前 v${r.currentVersion}）", color = NeonGreen, fontWeight = FontWeight.Medium)
+                                    TextButton(onClick = {
+                                        runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(if (r.releaseUrl.isNotBlank()) r.releaseUrl else "https://github.com/simon1uo/AutoPilot/releases")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                                    }) { Text("前往下载", color = NeonGreen) }
+                                } else {
+                                    Text("已是最新版本 v${r.currentVersion}", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
                     }
                 }
                 Spacer(Modifier.height(16.dp))

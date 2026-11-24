@@ -35,6 +35,9 @@ AutoPilot 是一款**开源、免费、无订阅**的轻量 Android 自动化工
 - **内建 HTTP 控制服务**（默认 :8080）：脚本化增删改查、立即执行
 - **ADB 直通**：`am broadcast` 命令控制，测试无需手动点屏幕
 - **权限中心**：集中检测并引导精确闹钟 / 通知 / 电池优化白名单 / 通知使用权
+- **版本更新检查**：GitHub 最新版本对比，设置页手动检查 + 启动自动检查（可开关）
+- **执行历史**：记录每次任务执行结果与逐步明细
+- **交互增强**：长按拖拽排序、下拉刷新、搜索、批量多选、任务克隆
 - **开机自动恢复**所有任务
 - **极简黑白 + 荧光绿** UI（Material 3）
 
@@ -95,6 +98,9 @@ All data stays on your device — no upload, no tracking, no ads (see [Privacy P
 - **Built-in HTTP control server** (default :8080) — CRUD + trigger from scripts
 - **ADB control** — drive it via `am broadcast`, no tapping needed for tests
 - **Permissions center** — check & guide exact alarm / notifications / battery optimization whitelist / notification access
+- **Update check** — compare with the latest GitHub release; manual check + optional auto-check on launch
+- **Execution history** — record each run's result and per-step detail
+- **Interaction** — long-press drag reorder, pull-to-refresh, search, batch multi-select, clone
 - **Restores all tasks on boot**
 - **Minimal black & white + neon green** UI (Material 3)
 

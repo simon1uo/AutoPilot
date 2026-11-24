@@ -19,7 +19,8 @@ class TaskRepository(ctx: Context) {
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true; encodeDefaults = true; coerceInputValues = true }
 
     fun load(): MutableList<Task> = try {
-        if (file.exists()) migrate(file.readText()) else mutableListOf()
+        val list = if (file.exists()) migrate(file.readText()) else mutableListOf()
+        list.sortedBy { it.order }.toMutableList()
     } catch (e: Exception) { mutableListOf() }
 
     fun save(tasks: List<Task>) {
@@ -60,6 +61,11 @@ class TaskRepository(ctx: Context) {
                 if (acts.isEmpty()) acts.add(Action.wake())
                 result.add(Task(id, name, enabled, hour, minute, days, interval, acts))
             }
+        }
+        // 为缺少 order 的旧任务按当前顺序补 order（全部为 0 视为未设置）
+        if (result.isNotEmpty() && result.all { it.order == 0 }) {
+            for ((i, t) in result.withIndex()) result[i] = t.copy(order = i)
+            changed = true
         }
         if (changed) save(result)   // 迁移后回写
         return result
