@@ -15,6 +15,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 import java.io.IOException
+import kotlin.concurrent.thread
 
 /**
  * 内嵌 HTTP 控制服务（NanoHTTPD）。默认 0.0.0.0:8080。
@@ -95,7 +96,7 @@ class HttpServerService : Service() {
                     uri.matches(Regex("/api/tasks/\\d+/trigger")) && method == Method.POST -> {
                         val id = uri.split("/")[3].toLong()
                         val t = repo.load().firstOrNull { it.id == id }
-                        if (t != null) { CoreActions.runTask(ctx, t); json(200, """{"status":"triggered"}""") }
+                        if (t != null) { thread { kotlinx.coroutines.runBlocking { CoreActions.runTask(ctx.applicationContext, t) } }; json(200, """{"status":"triggered"}""") }
                         else json(404, """{"error":"not found"}""")
                     }
                     uri.matches(Regex("/api/tasks/\\d+/toggle")) && method == Method.POST -> {

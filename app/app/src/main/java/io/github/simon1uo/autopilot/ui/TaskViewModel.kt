@@ -2,6 +2,7 @@ package io.github.simon1uo.autopilot.ui
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import io.github.simon1uo.autopilot.data.TaskRepository
 import io.github.simon1uo.autopilot.engine.CoreActions
 import io.github.simon1uo.autopilot.engine.Scheduler
@@ -9,6 +10,7 @@ import io.github.simon1uo.autopilot.model.Task
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class TaskViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = TaskRepository(app)
@@ -35,13 +37,10 @@ class TaskViewModel(app: Application) : AndroidViewModel(app) {
         reload()
     }
 
-    fun toggle(task: Task) {
-        val updated = task.copy(enabled = !task.enabled)
-        save(updated)
-    }
+    fun toggle(task: Task) = save(task.copy(enabled = !task.enabled))
 
     fun triggerNow(task: Task) {
-        CoreActions.runTask(getApplication(), task)
+        viewModelScope.launch { CoreActions.runTask(getApplication(), task) }
     }
 
     fun nextTimeText(task: Task): String {

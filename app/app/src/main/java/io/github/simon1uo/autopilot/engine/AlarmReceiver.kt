@@ -4,6 +4,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import io.github.simon1uo.autopilot.data.TaskRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class AlarmReceiver : BroadcastReceiver() {
     companion object {
@@ -16,8 +19,13 @@ class AlarmReceiver : BroadcastReceiver() {
         val repo = TaskRepository(ctx)
         val task = repo.load().firstOrNull { it.id == id } ?: return
         if (!task.enabled) return
-        CoreActions.runTask(ctx, task)
-        // 重新排下一次
-        Scheduler.schedule(ctx, task)
+        // 用 goAsync 保证动作序列（可能含等待）能执行完
+        val pending = goAsync()
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
+                CoreActions.runTask(ctx.applicationContext, task)
+                Scheduler.schedule(ctx.applicationContext, task)
+            } finally { pending.finish() }
+        }
     }
 }
