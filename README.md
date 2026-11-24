@@ -73,6 +73,18 @@ adb shell am broadcast -a io.github.simon1uo.autopilot.CONTROL \
   -n io.github.simon1uo.autopilot/.control.ControlReceiver --es cmd trigger --el id <id>
 ```
 
+### 从 MacroDroid 导入任务
+AutoPilot 支持把 MacroDroid 的备份（`.mdr` 文件，JSON 格式）转换为 AutoPilot 任务：
+
+```bash
+# 1. 从手机取出 MacroDroid 自动备份（路径可能因版本不同）
+adb pull "/sdcard/Android/data/com.arlosoft.macrodroid/files/MacroDroid/AutoBackup/<备份>.mdr" backup.mdr
+# 2. 转换为 AutoPilot 任务 JSON
+python3 scripts/md_to_autopilot.py backup.mdr autopilot_tasks.json
+# 3. 通过 HTTP API 导入（或复制 JSON 后在 设置→数据管理→导入 粘贴）
+```
+支持映射：TimerTrigger→定时、ScreenOn→唤醒屏幕、LaunchActivity→启动App、Wait、SetVolume、WiFi/蓝牙、通知。
+
 ### 技术栈
 Kotlin · Jetpack Compose · MVVM · NanoHTTPD · kotlinx.serialization · minSdk 26 / targetSdk 36
 

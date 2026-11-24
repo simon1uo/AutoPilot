@@ -1,5 +1,7 @@
 # 贡献指南 / Contributing Guide
 
+> English: [CONTRIBUTING.en.md](CONTRIBUTING.en.md)
+
 > 本项目遵循 **Conventional Commits** 提交规范、**Semantic Versioning** 版本规范。
 > This project follows **Conventional Commits** and **Semantic Versioning**.
 

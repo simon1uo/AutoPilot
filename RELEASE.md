@@ -1,5 +1,7 @@
 # 发包规范 / Release Convention
 
+> English: [RELEASE.en.md](RELEASE.en.md)
+
 ## 版本号 / Versioning
 
 遵循 [Semantic Versioning 2.0.0](https://semver.org/lang/zh-CN/)：`MAJOR.MINOR.PATCH`

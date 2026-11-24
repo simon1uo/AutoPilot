@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+### Added
+- MacroDroid 备份(.mdr)导入工具 scripts/md_to_autopilot.py（Timer/ScreenOn/LaunchApp/Wait/Volume/WiFi/蓝牙/通知）
+- issue/PR 模板 (.github/ISSUE_TEMPLATE, PULL_REQUEST_TEMPLATE.md)
+- 英文版 CONTRIBUTING.en.md / RELEASE.en.md
+
 ## [0.3.0] - 2026-11-24
 
 ### Added
