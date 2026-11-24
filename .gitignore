@@ -20,3 +20,5 @@ captures/
 # Artifacts
 *.apk
 *.aab
+# gh cli cache (sandbox)
+.gh-cache/
