@@ -41,14 +41,18 @@ class HttpServerService : Service() {
     }
 
     private var server: Server? = null
+    private var activePort: Int = PORT
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         startForegroundCompat()
-        server = Server(this).also { runCatching { it.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false) } }
-        Log.i(TAG, "HTTP server started on port $PORT")
+        val port = io.github.simon1uo.autopilot.data.SettingsStore(this).httpPort
+        activePort = port
+        server = try { Server(this, port) } catch (e: Exception) { Server(this, PORT) }
+        runCatching { server!!.start(NanoHTTPD.SOCKET_READ_TIMEOUT, false) }
+        Log.i(TAG, "HTTP server started on port $activePort")
     }
 
     private fun startForegroundCompat() {
@@ -74,7 +78,7 @@ class HttpServerService : Service() {
 
     override fun onDestroy() { server?.stop(); server = null; super.onDestroy() }
 
-    class Server(private val ctx: Context) : NanoHTTPD(PORT) {
+    class Server(private val ctx: Context, port: Int) : NanoHTTPD(port) {
         private val repo get() = TaskRepository(ctx)
 
         override fun serve(session: IHTTPSession): Response {

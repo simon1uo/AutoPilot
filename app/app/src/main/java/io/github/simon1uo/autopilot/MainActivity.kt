@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 应用在前台时启动内嵌 HTTP 控制服务（后台启动会被系统拒绝）
-        runCatching { io.github.simon1uo.autopilot.control.HttpServerService.start(this) }
+        runCatching { if (io.github.simon1uo.autopilot.data.SettingsStore(this).httpAutoStart) io.github.simon1uo.autopilot.control.HttpServerService.start(this) }
         setContent {
             AutoPilotTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {

@@ -27,6 +27,10 @@ object CoreActions {
     /** 顺序执行一个任务的全部动作（挂起，支持等待）。 */
     suspend fun runTask(ctx: Context, task: Task) {
         Log.i(TAG, "runTask: ${task.name}, ${task.actions.size} actions")
+        val settings = io.github.simon1uo.autopilot.data.SettingsStore(ctx)
+        if (settings.notifyOnTaskRun) {
+            notifyExtra(ctx, "AutoPilot", "任务「${task.name}」已执行", settings.notifySound)
+        }
         for ((idx, a) in task.actions.withIndex()) {
             if (!a.enabled) { Log.i(TAG, "  [$idx] skipped(disabled) ${a.type}"); continue }
             try {
@@ -117,6 +121,22 @@ object CoreActions {
             if (on) adapter.enable() else adapter.disable() // Android 13+ 受限
             Log.i(TAG, "toggleBluetooth: $on")
         } catch (e: Exception) { Log.e(TAG, "toggleBluetooth failed: ${e.message}") }
+    }
+
+    private fun notifyExtra(ctx: Context, title: String, msg: String, sound: Boolean) {
+        try {
+            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val ch = "autopilot_run"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && nm.getNotificationChannel(ch) == null) {
+                val chan = NotificationChannel(ch, "任务执行", if (sound) NotificationManager.IMPORTANCE_DEFAULT else NotificationManager.IMPORTANCE_LOW)
+                if (!sound) chan.setSound(null, null)
+                nm.createNotificationChannel(chan)
+            }
+            val n = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) android.app.Notification.Builder(ctx, ch)
+                    else @Suppress("DEPRECATION") android.app.Notification.Builder(ctx)
+            n.setContentTitle(title).setContentText(msg).setSmallIcon(android.R.drawable.ic_dialog_info).setAutoCancel(true)
+            nm.notify(("run_" + System.currentTimeMillis()).hashCode(), n.build())
+        } catch (e: Exception) { Log.e(TAG, "notifyExtra failed: ${e.message}") }
     }
 
     private fun notify(ctx: Context, msg: String) {

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +36,7 @@ import io.github.simon1uo.autopilot.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskListScreen(vm: TaskViewModel, onNew: () -> Unit, onEdit: (Task) -> Unit) {
+fun TaskListScreen(vm: TaskViewModel, onNew: () -> Unit, onEdit: (Task) -> Unit, onOpenSettings: () -> Unit = {}) {
     val tasks by vm.tasks.collectAsStateWithLifecycle()
     val ctx = LocalContext.current
 
@@ -53,6 +54,9 @@ fun TaskListScreen(vm: TaskViewModel, onNew: () -> Unit, onEdit: (Task) -> Unit)
                         if (tasks.isEmpty()) "还没有任务" else "${tasks.size} 个任务",
                         color = TextTertiary, style = MaterialTheme.typography.bodySmall,
                     )
+                }
+                IconButton(onClick = onOpenSettings) {
+                    Icon(Icons.Outlined.Settings, "设置", tint = TextSecondary, modifier = Modifier.size(26.dp))
                 }
             }
 
