@@ -1,0 +1,22 @@
+# Build
+build/
+app/build/
+app/.gradle/
+app/.kotlin/
+.gradle/
+.gradle-home/
+.kotlin/
+# Local env / secrets
+local.properties
+.android-home/
+.jdk/
+# IDE
+*.iml
+.idea/
+.DS_Store
+captures/
+.externalNativeBuild
+.cxx
+# Artifacts
+*.apk
+*.aab
