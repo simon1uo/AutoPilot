@@ -18,14 +18,16 @@ import io.github.simon1uo.autopilot.data.SettingsStore
 import io.github.simon1uo.autopilot.engine.UpdateChecker
 import io.github.simon1uo.autopilot.ui.AutoPilotNav
 import io.github.simon1uo.autopilot.ui.theme.AutoPilotTheme
+import io.github.simon1uo.autopilot.ui.theme.ThemeState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // 应用在前台时启动内嵌 HTTP 控制服务（后台启动会被系统拒绝）
         runCatching { if (SettingsStore(this).httpAutoStart) io.github.simon1uo.autopilot.control.HttpServerService.start(this) }
+        ThemeState.init(this)
         setContent {
-            AutoPilotTheme {
+            AutoPilotTheme(mode = ThemeState.mode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     AutoPilotNav()
                     StartupUpdateCheck()

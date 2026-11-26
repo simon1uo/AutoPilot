@@ -17,7 +17,7 @@ class SettingsStore(ctx: Context) {
         get() = sp.getBoolean("new_task_enabled", true)
         set(v) = sp.edit().putBoolean("new_task_enabled", v).apply()
 
-    /** 主题：跟随系统 / 深色 / 浅色 —— 极简风固定深色，此项目前保留为「深色」 */
+    /** 主题：dark / amoled / light / system —— 见 ThemeMode */
     var themeMode: String
         get() = sp.getString("theme_mode", "dark") ?: "dark"
         set(v) = sp.edit().putString("theme_mode", v).apply()

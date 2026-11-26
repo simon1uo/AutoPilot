@@ -20,7 +20,6 @@ object Permissions {
         EXACT_ALARM("exact_alarm", "精确闹钟", "保证定时任务准时触发，不被系统延迟"),
         POST_NOTIF("notif", "通知权限", "任务执行提醒、HTTP 服务常驻通知"),
         BATTERY_OPT("battery", "电池优化白名单", "避免后台任务被系统清理/休眠"),
-        NOTIF_ACCESS("notif_access", "通知使用权", "调节音量/勿扰时读取通知状态（可选）"),
         OVERLAY("overlay", "悬浮窗权限", "部分自动化动作需要（可选）"),
     }
 
@@ -29,7 +28,6 @@ object Permissions {
         Perm.EXACT_ALARM -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
         Perm.POST_NOTIF -> Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
         Perm.BATTERY_OPT -> true
-        Perm.NOTIF_ACCESS -> true
         Perm.OVERLAY -> true
     }
 
@@ -41,8 +39,6 @@ object Permissions {
             ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         else true
         Perm.BATTERY_OPT -> (ctx.getSystemService(Context.POWER_SERVICE) as PowerManager).isIgnoringBatteryOptimizations(ctx.packageName)
-        Perm.NOTIF_ACCESS -> Settings.Secure.getString(ctx.contentResolver, "enabled_notification_listeners")
-            ?.contains(ctx.packageName) == true
         Perm.OVERLAY -> Settings.canDrawOverlays(ctx)
     }
 
@@ -55,7 +51,6 @@ object Permissions {
                 else return false
             }
             Perm.BATTERY_OPT -> Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:${ctx.packageName}"))
-            Perm.NOTIF_ACCESS -> Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
             Perm.OVERLAY -> Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${ctx.packageName}"))
             Perm.POST_NOTIF -> Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName)
         }

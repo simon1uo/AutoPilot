@@ -32,23 +32,25 @@ import io.github.simon1uo.autopilot.engine.UpdateChecker
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import io.github.simon1uo.autopilot.ui.theme.*
+import io.github.simon1uo.autopilot.ui.theme.ThemeState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses: () -> Unit) {
     val ctx = LocalContext.current
     val store = remember { SettingsStore(ctx) }
+    val c = LocalAutoColors.current
     var refresh by remember { mutableStateOf(0) }
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
     var updateResult by remember { mutableStateOf<UpdateChecker.Result?>(null) }
 
-    Box(Modifier.fillMaxSize().background(Ink)) {
+    Box(Modifier.fillMaxSize().background(c.bg)) {
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
             // top bar
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "返回", tint = TextPrimary) }
-                Text("设置", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "返回", tint = c.textPrimary) }
+                Text("设置", color = c.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             }
             Hairline()
 
@@ -65,7 +67,7 @@ fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses
                 SettingsSection("通用") {
                     ToggleRow("开机自启", "重启后自动恢复所有任务", store.autoStartOnBoot) { store.autoStartOnBoot = it }
                     ToggleRow("新任务默认启用", "新建任务时默认开启", store.newTaskEnabledByDefault) { store.newTaskEnabledByDefault = it }
-                    InfoRow("主题", "极简黑白（固定深色）")
+                    ThemeModeRow(ctx)
                 }
                 Spacer(Modifier.height(16.dp))
 
@@ -116,14 +118,14 @@ fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses
                         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
                             Column {
                                 if (r.error != null) {
-                                    Text("检查失败：${r.error}", color = DangerRed, style = MaterialTheme.typography.bodySmall)
+                                    Text("检查失败：${r.error}", color = c.danger, style = MaterialTheme.typography.bodySmall)
                                 } else if (r.hasUpdate) {
-                                    Text("发现新版本 v${r.latestVersion}（当前 v${r.currentVersion}）", color = NeonGreen, fontWeight = FontWeight.Medium)
+                                    Text("发现新版本 v${r.latestVersion}（当前 v${r.currentVersion}）", color = c.accent, fontWeight = FontWeight.Medium)
                                     TextButton(onClick = {
                                         runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(if (r.releaseUrl.isNotBlank()) r.releaseUrl else "https://github.com/simon1uo/AutoPilot/releases")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                                    }) { Text("前往下载", color = NeonGreen) }
+                                    }) { Text("前往下载", color = c.accent) }
                                 } else {
-                                    Text("已是最新版本 v${r.currentVersion}", color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+                                    Text("已是最新版本 v${r.currentVersion}", color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
@@ -156,15 +158,17 @@ private fun localIp(ctx: Context): String? = try {
 
 @Composable
 fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Text(title, color = TextTertiary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium,
+    val c = LocalAutoColors.current
+    Text(title, color = c.textTertiary, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium,
         modifier = Modifier.padding(start = 4.dp, bottom = 8.dp))
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(InkElevated)) {
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(c.card)) {
         content()
     }
 }
 
 @Composable
 fun PermissionRow(ctx: Context, perm: Permissions.Perm, refreshKey: Int) {
+    val c = LocalAutoColors.current
     val relevant = remember(refreshKey) { Permissions.isRelevant(ctx, perm) }
     val granted = remember(refreshKey) { Permissions.isGranted(ctx, perm) }
     Row(
@@ -173,19 +177,19 @@ fun PermissionRow(ctx: Context, perm: Permissions.Perm, refreshKey: Int) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
-            Text(perm.title, color = TextPrimary, fontWeight = FontWeight.Medium)
-            Text(perm.desc, color = TextTertiary, style = MaterialTheme.typography.labelSmall)
+            Text(perm.title, color = c.textPrimary, fontWeight = FontWeight.Medium)
+            Text(perm.desc, color = c.textTertiary, style = MaterialTheme.typography.labelSmall)
         }
         if (!relevant) {
-            Pill("不适用", bg = InkElevated2, fg = TextTertiary)
+            Pill("不适用", bg = c.cardHigh, fg = c.textTertiary)
         } else if (granted) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.CheckCircle, null, tint = NeonGreen, modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.CheckCircle, null, tint = c.accent, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
-                Text("已授权", color = NeonGreen, style = MaterialTheme.typography.labelMedium)
+                Text("已授权", color = c.accent, style = MaterialTheme.typography.labelMedium)
             }
         } else {
-            Pill("去授权", bg = NeonGreen, fg = Ink)
+            Pill("去授权", bg = c.accent, fg = c.bg)
         }
     }
     Hairline()
@@ -193,14 +197,15 @@ fun PermissionRow(ctx: Context, perm: Permissions.Perm, refreshKey: Int) {
 
 @Composable
 fun ToggleRow(title: String, desc: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val c = LocalAutoColors.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(title, color = TextPrimary, fontWeight = FontWeight.Medium)
-            Text(desc, color = TextTertiary, style = MaterialTheme.typography.labelSmall)
+            Text(title, color = c.textPrimary, fontWeight = FontWeight.Medium)
+            Text(desc, color = c.textTertiary, style = MaterialTheme.typography.labelSmall)
         }
         Switch(checked = checked, onCheckedChange = onChange, colors = SwitchDefaults.colors(
-            checkedThumbColor = Ink, checkedTrackColor = NeonGreen,
-            uncheckedThumbColor = TextTertiary, uncheckedTrackColor = InkElevated2,
+            checkedThumbColor = c.bg, checkedTrackColor = c.accent,
+            uncheckedThumbColor = c.textTertiary, uncheckedTrackColor = c.cardHigh,
         ))
     }
     Hairline()
@@ -208,34 +213,37 @@ fun ToggleRow(title: String, desc: String, checked: Boolean, onChange: (Boolean)
 
 @Composable
 fun InfoRow(title: String, value: String) {
+    val c = LocalAutoColors.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = TextPrimary, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
-        Text(value, color = TextSecondary, style = MaterialTheme.typography.bodySmall)
+        Text(title, color = c.textPrimary, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+        Text(value, color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
     }
     Hairline()
 }
 
 @Composable
 fun ActionRow(icon: ImageVector, title: String, desc: String, danger: Boolean = false, onClick: () -> Unit) {
+    val c = LocalAutoColors.current
     Row(Modifier.fillMaxWidth().clickable { onClick() }.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(icon, null, tint = if (danger) DangerRed else TextSecondary, modifier = Modifier.size(20.dp))
+        Icon(icon, null, tint = if (danger) c.danger else c.textSecondary, modifier = Modifier.size(20.dp))
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = if (danger) DangerRed else TextPrimary, fontWeight = FontWeight.Medium)
-            Text(desc, color = TextTertiary, style = MaterialTheme.typography.labelSmall)
+            Text(title, color = if (danger) c.danger else c.textPrimary, fontWeight = FontWeight.Medium)
+            Text(desc, color = c.textTertiary, style = MaterialTheme.typography.labelSmall)
         }
-        Icon(Icons.Outlined.ChevronRight, null, tint = TextTertiary, modifier = Modifier.size(18.dp))
+        Icon(Icons.Outlined.ChevronRight, null, tint = c.textTertiary, modifier = Modifier.size(18.dp))
     }
     Hairline()
 }
 
 @Composable
 fun HttpPortRow(store: SettingsStore) {
+    val c = LocalAutoColors.current
     var portText by remember { mutableStateOf(store.httpPort.toString()) }
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text("端口", color = TextPrimary, fontWeight = FontWeight.Medium)
-            Text("HTTP 服务监听端口 (1024-65535)", color = TextTertiary, style = MaterialTheme.typography.labelSmall)
+            Text("端口", color = c.textPrimary, fontWeight = FontWeight.Medium)
+            Text("HTTP 服务监听端口 (1024-65535)", color = c.textTertiary, style = MaterialTheme.typography.labelSmall)
         }
         OutlinedTextField(
             value = portText,
@@ -244,9 +252,9 @@ fun HttpPortRow(store: SettingsStore) {
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = InkElevated2, unfocusedContainerColor = InkElevated2,
-                focusedBorderColor = NeonGreen, unfocusedBorderColor = Hairline,
-                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = NeonGreen,
+                focusedContainerColor = c.cardHigh, unfocusedContainerColor = c.cardHigh,
+                focusedBorderColor = c.accent, unfocusedBorderColor = c.hairline,
+                focusedTextColor = c.textPrimary, unfocusedTextColor = c.textPrimary, cursorColor = c.accent,
             ),
         )
     }
@@ -282,4 +290,45 @@ object DataManager {
             android.widget.Toast.makeText(ctx, "导入失败：${e.message}", android.widget.Toast.LENGTH_LONG).show()
         }
     }
+}
+
+/** 主题模式四档分段控件，点完立即全局生效 */
+@Composable
+fun ThemeModeRow(ctx: Context) {
+    val c = LocalAutoColors.current
+    val current = ThemeState.mode
+    val options = listOf(
+        "dark" to "深色",
+        "amoled" to "纯黑",
+        "light" to "浅色",
+        "system" to "跟随系统",
+    )
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text("主题", color = c.textPrimary, fontWeight = FontWeight.Medium)
+        Text("选择 App 的外观模式，点击即时生效", color = c.textTertiary, style = MaterialTheme.typography.labelSmall)
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(c.cardHigh).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            options.forEach { (value, label) ->
+                val selected = current == value
+                Box(
+                    Modifier.weight(1f).clip(RoundedCornerShape(11.dp))
+                        .background(if (selected) c.accent else androidx.compose.ui.graphics.Color.Transparent)
+                        .clickable { if (!selected) ThemeState.set(ctx, value) }
+                        .padding(vertical = 9.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label,
+                        color = if (selected) c.onAccent else c.textSecondary,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 13.sp,
+                    )
+                }
+            }
+        }
+    }
+    Hairline()
 }

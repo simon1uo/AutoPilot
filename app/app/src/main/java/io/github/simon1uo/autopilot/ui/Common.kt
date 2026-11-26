@@ -18,7 +18,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = TextTertiary,
+        color = LocalAutoColors.current.textTertiary,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = androidx.compose.ui.unit.TextUnit.Unspecified,
         modifier = modifier.padding(horizontal = 4.dp, vertical = 8.dp),
@@ -28,7 +28,7 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
 /** 细线分割 */
 @Composable
 fun Hairline(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(1.dp).background(Hairline))
+    Box(modifier.fillMaxWidth().height(1.dp).background(LocalAutoColors.current.hairline))
 }
 
 /** 荧光绿圆角主按钮 */
@@ -40,10 +40,10 @@ fun NeonButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
         modifier = modifier.height(52.dp),
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = NeonGreen,
-            contentColor = Ink,
-            disabledContainerColor = InkElevated2,
-            disabledContentColor = TextTertiary,
+            containerColor = LocalAutoColors.current.accent,
+            contentColor = LocalAutoColors.current.onAccent,
+            disabledContainerColor = LocalAutoColors.current.cardHigh,
+            disabledContentColor = LocalAutoColors.current.textTertiary,
         ),
     ) {
         Text(text, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
@@ -52,9 +52,15 @@ fun NeonButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
 
 /** 小圆角标签 */
 @Composable
-fun Pill(text: String, modifier: Modifier = Modifier, bg: androidx.compose.ui.graphics.Color = InkElevated2, fg: androidx.compose.ui.graphics.Color = TextSecondary) {
+fun Pill(
+    text: String,
+    modifier: Modifier = Modifier,
+    bg: androidx.compose.ui.graphics.Color? = null,
+    fg: androidx.compose.ui.graphics.Color? = null,
+) {
+    val c = LocalAutoColors.current
     Box(
-        modifier.clip(RoundedCornerShape(50)).background(bg).padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier.clip(RoundedCornerShape(50)).background(bg ?: c.cardHigh).padding(horizontal = 10.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
-    ) { Text(text, style = MaterialTheme.typography.labelSmall, color = fg) }
+    ) { Text(text, style = MaterialTheme.typography.labelSmall, color = fg ?: c.textSecondary) }
 }

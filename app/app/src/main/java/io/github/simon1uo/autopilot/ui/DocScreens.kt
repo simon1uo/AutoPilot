@@ -19,16 +19,17 @@ import io.github.simon1uo.autopilot.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TextDocScreen(title: String, body: String, onBack: () -> Unit) {
-    Box(Modifier.fillMaxSize().background(Ink)) {
+    val c = LocalAutoColors.current
+    Box(Modifier.fillMaxSize().background(c.bg)) {
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "返回", tint = TextPrimary) }
-                Text(title, color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "返回", tint = c.textPrimary) }
+                Text(title, color = c.textPrimary, fontWeight = FontWeight.Bold, fontSize = 20.sp)
             }
             Hairline()
             Text(
                 body,
-                color = TextSecondary,
+                color = c.textSecondary,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
             )
