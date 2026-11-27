@@ -10,6 +10,11 @@ app/.kotlin/
 local.properties
 .android-home/
 .jdk/
+.build-home/
+# Signing secrets (never commit)
+keystore.properties
+*.jks
+*.keystore
 # IDE
 *.iml
 .idea/

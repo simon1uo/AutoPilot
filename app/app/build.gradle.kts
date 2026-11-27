@@ -1,9 +1,20 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
+
+// 签名信息：优先 keystore.properties（本地，不入库），其次环境变量（CI Secrets）
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun propOrEnv(name: String, envName: String): String? =
+    keystoreProps.getProperty(name)?.takeIf { it.isNotBlank() }
+        ?: System.getenv(envName)?.takeIf { it.isNotBlank() }
 
 android {
     namespace = "io.github.simon1uo.autopilot"
@@ -19,12 +30,43 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        val storePath = propOrEnv("storeFile", "KEYSTORE_PATH")
+        if (storePath != null) {
+            create("release") {
+                val abs = rootProject.file(storePath)
+                storeFile = if (abs.exists()) abs else file(storePath)
+                storePassword = propOrEnv("storePassword", "KEYSTORE_PASSWORD")
+                keyAlias = propOrEnv("keyAlias", "KEY_ALIAS")
+                keyPassword = propOrEnv("keyPassword", "KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // 有 release 签名配置时才签名，否则保持 unsigned（CI 无密钥场景）
+            signingConfig = signingConfigs.findByName("release")
         }
     }
+
+    // 分发渠道：
+    //  direct = GitHub / 酷安 / 官网直发，带应用内自更新
+    //  foss   = F-Droid / 应用商店，禁用自更新（避免与收录政策冲突）
+    flavorDimensions += "dist"
+    productFlavors {
+        create("direct") {
+            dimension = "dist"
+            buildConfigField("boolean", "SELF_UPDATE", "true")
+        }
+        create("foss") {
+            dimension = "dist"
+            buildConfigField("boolean", "SELF_UPDATE", "false")
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
