@@ -50,8 +50,8 @@ AutoPilot 是一款**开源、免费、无订阅**的轻量 Android 自动化工
 export JAVA_HOME=/path/to/jdk-21
 export ANDROID_HOME=$HOME/Library/Android/sdk
 cd app
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDirectDebug     # 或 assembleFossDebug / assembleDirectRelease
+adb install -r app/build/outputs/apk/direct/debug/app-direct-debug.apk
 ```
 
 ### HTTP 控制 API
@@ -113,8 +113,8 @@ Grab the latest APK from [Releases](https://github.com/simon1uo/AutoPilot/releas
 export JAVA_HOME=/path/to/jdk-21
 export ANDROID_HOME=$HOME/Library/Android/sdk
 cd app
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDirectDebug     # 或 assembleFossDebug / assembleDirectRelease
+adb install -r app/build/outputs/apk/direct/debug/app-direct-debug.apk
 ```
 
 ### Tech stack

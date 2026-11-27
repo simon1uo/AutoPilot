@@ -12,6 +12,8 @@ jobs:
   release:
     name: Build & Publish Release
     runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,21 +35,45 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./app/gradlew
 
-      - name: Build release + debug APK
+      - name: Decode keystore
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+
+      - name: Build signed release (secrets present)
+        if: env.HAS_KEYSTORE == 'true'
         working-directory: ./app
-        run: ./gradlew assembleRelease assembleDebug --no-daemon --stacktrace
+        env:
+          KEYSTORE_PATH: ${{ runner.temp }}/release.keystore
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: ./gradlew assembleDirectRelease assembleDirectDebug --no-daemon --stacktrace
+
+      - name: Build unsigned release (no secrets)
+        if: env.HAS_KEYSTORE != 'true'
+        working-directory: ./app
+        run: ./gradlew assembleDirectRelease assembleDirectDebug --no-daemon --stacktrace
+
+      - name: Verify signature
+        if: env.HAS_KEYSTORE == 'true'
+        run: |
+          APK=$(ls app/app/build/outputs/apk/direct/release/*.apk | head -1)
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$APK"
 
       - name: Rename artifacts
         run: |
           TAG="${GITHUB_REF_NAME}"
           mkdir -p out
-          find app/app/build/outputs/apk -name "*.apk" | while read f; do
-            base=$(basename "$f")
-            case "$base" in
-              *debug*)   cp "$f" "out/AutoPilot-${TAG}-debug.apk" ;;
-              *release*) cp "$f" "out/AutoPilot-${TAG}-release-unsigned.apk" ;;
-            esac
-          done
+          REL=$(ls app/app/build/outputs/apk/direct/release/*.apk | head -1)
+          DBG=$(ls app/app/build/outputs/apk/direct/debug/*.apk | head -1)
+          if echo "$REL" | grep -q unsigned; then
+            cp "$REL" "out/AutoPilot-${TAG}-release-unsigned.apk"
+          else
+            cp "$REL" "out/AutoPilot-${TAG}-release.apk"
+          fi
+          cp "$DBG" "out/AutoPilot-${TAG}-debug.apk"
           ls -la out/
 
       - name: Extract changelog for this version

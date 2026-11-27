@@ -31,10 +31,11 @@ versionName = "X.Y.Z"  // 与 git tag 保持一致（去掉 v 前缀）
    git tag -a vX.Y.Z -m "Release vX.Y.Z"
    git push origin main --tags
    ```
-5. **GitHub Actions 自动**：
-   - 运行 lint/构建
-   - 构建 **release APK**（未签名，供测试）+ **debug APK**
+5. **GitHub Actions 自动**（`.github/workflows/release.yml`）：
+   - 构建 `direct` flavor 的 **签名 release APK** + **debug APK**
+   - 用 `apksigner` 校验签名
    - 生成对应 **GitHub Release**，上传 APK 作为 assets，正文取自 CHANGELOG 对应小节
+   （未配置 keystore Secrets 时产出 unsigned 包，仅用于无法获取密钥的 fork）
 
 ## Tag 命名 / Tag Naming
 
@@ -43,13 +44,14 @@ versionName = "X.Y.Z"  // 与 git tag 保持一致（去掉 v 前缀）
 
 ## 签名 / Signing
 
-- 仓库**不提交**任何 keystore / 密钥。
-- Debug 构建使用自动生成的 debug keystore（仅本地/CI 临时）。
-- Release 正式签名由维护者在本地或通过仓库 Secrets 完成，签名文件不入库。
-- 如需 CI 产出签名包，请在仓库 Settings → Secrets 配置：
-  - `KEYSTORE_BASE64`（base64 编码的 keystore）
-  - `KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`
-  构建脚本检测到这些 secrets 时才启用 release 签名，否则产出 unsigned APK。
+完整说明见 [docs/SIGNING.md](docs/SIGNING.md)。要点：
+
+- 采用**开发者自签名**（self-signed release key），与主流开源应用一致。
+- 仓库**不提交**任何 keystore / 密钥；`*.jks`、`*.keystore`、`keystore.properties` 已在 `.gitignore`。
+- 本地：复制 `keystore.properties.example` → `keystore.properties` 后即可签名。
+- CI：在仓库 Settings → Secrets 配置 `KEYSTORE_BASE64`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD`；检测到即签名并校验，否则产出 unsigned 包。
+- **keystore 一旦丢失将无法再发布更新**，务必离线多份备份。
+- 分发包为 `direct` flavor（带应用内自更新）；`foss` flavor 不含自更新，供 F-Droid/商店使用。
 
 ## 产物命名 / Artifact Naming
 
