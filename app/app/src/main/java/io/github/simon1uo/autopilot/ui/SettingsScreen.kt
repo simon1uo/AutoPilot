@@ -44,6 +44,8 @@ fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses
     val scope = rememberCoroutineScope()
     var checking by remember { mutableStateOf(false) }
     var updateResult by remember { mutableStateOf<UpdateChecker.Result?>(null) }
+    var updating by remember { mutableStateOf(false) }
+    var updateProgress by remember { mutableStateOf(0) }
 
     Box(Modifier.fillMaxSize().background(c.bg)) {
         Column(Modifier.fillMaxSize().systemBarsPadding()) {
@@ -121,9 +123,23 @@ fun SettingsScreen(onBack: () -> Unit, onShowPrivacy: () -> Unit, onShowLicenses
                                     Text("检查失败：${r.error}", color = c.danger, style = MaterialTheme.typography.bodySmall)
                                 } else if (r.hasUpdate) {
                                     Text("发现新版本 v${r.latestVersion}（当前 v${r.currentVersion}）", color = c.accent, fontWeight = FontWeight.Medium)
-                                    TextButton(onClick = {
-                                        runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(if (r.releaseUrl.isNotBlank()) r.releaseUrl else "https://github.com/simon1uo/AutoPilot/releases")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-                                    }) { Text("前往下载", color = c.accent) }
+                                    TextButton(enabled = !updating, onClick = {
+                                        if (BuildConfig.SELF_UPDATE && r.apkUrl.isNotBlank()) {
+                                            if (!io.github.simon1uo.autopilot.engine.AppUpdater.canInstall(ctx)) {
+                                                io.github.simon1uo.autopilot.engine.AppUpdater.openInstallPermission(ctx)
+                                                android.widget.Toast.makeText(ctx, "请允许「安装未知应用」后重试", android.widget.Toast.LENGTH_LONG).show()
+                                            } else {
+                                                updating = true
+                                                scope.launch {
+                                                    runCatching { io.github.simon1uo.autopilot.engine.AppUpdater.downloadAndInstall(ctx, r.apkUrl, r.apkSha256) { updateProgress = it } }
+                                                        .onFailure { android.widget.Toast.makeText(ctx, "更新失败：${it.message}", android.widget.Toast.LENGTH_LONG).show() }
+                                                    updating = false
+                                                }
+                                            }
+                                        } else {
+                                            runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(if (r.releaseUrl.isNotBlank()) r.releaseUrl else "https://github.com/simon1uo/AutoPilot/releases")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                                        }
+                                    }) { Text(if (updating) "更新中 $updateProgress%" else if (BuildConfig.SELF_UPDATE && r.apkUrl.isNotBlank()) "立即更新" else "前往下载", color = c.accent) }
                                 } else {
                                     Text("已是最新版本 v${r.currentVersion}", color = c.textSecondary, style = MaterialTheme.typography.bodySmall)
                                 }

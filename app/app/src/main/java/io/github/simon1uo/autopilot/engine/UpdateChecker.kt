@@ -7,10 +7,9 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /**
- * 版本更新检查。
- * 主策略：请求 https://github.com/<repo>/releases/latest 的 302 重定向，
- *         从 Location 头读取最新 tag（无需 API、不受未认证限流影响）。
- * 回退策略：GitHub Releases API。
+ * 版本更新检查 + 应用内自更新信息。
+ * 主策略：GitHub Releases API（同时拿到 tag 和 APK 下载地址）。
+ * 回退策略：releases/latest 的 302 重定向拿 tag（仅用于版本比较）。
  */
 object UpdateChecker {
     private const val OWNER_REPO = "simon1uo/AutoPilot"
@@ -22,44 +21,57 @@ object UpdateChecker {
         val currentVersion: String,
         val latestVersion: String,
         val releaseUrl: String,
+        val apkUrl: String = "",
+        val apkSha256: String? = null,
         val releaseNotes: String = "",
         val error: String? = null,
     )
 
     suspend fun check(): Result = withContext(Dispatchers.IO) {
         val current = BuildConfig.VERSION_NAME
-        // 1) 无 API 重定向方式
+        try {
+            viaApi(current)?.let { return@withContext it }
+        } catch (_: Exception) { }
         try {
             val tag = latestTagViaRedirect()
             if (tag.isNotBlank()) {
                 val hasUpdate = compareVersion(tag, current) > 0
                 return@withContext Result(hasUpdate, current, tag, "https://github.com/$OWNER_REPO/releases/tag/v$tag")
             }
-        } catch (_: Exception) { /* 落到 API */ }
-        // 2) 回退 API
-        try {
-            val conn = (URL(API).openConnection() as HttpURLConnection).apply {
-                requestMethod = "GET"; connectTimeout = 8000; readTimeout = 8000
-                setRequestProperty("Accept", "application/vnd.github+json")
-                setRequestProperty("User-Agent", "AutoPilot-Android")
-            }
-            if (conn.responseCode != 200) {
-                val msg = if (conn.responseCode == 403) "GitHub 接口限流，稍后再试" else "HTTP ${conn.responseCode}"
-                return@withContext Result(false, current, current, "", "", msg)
-            }
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
-            var tag = ""
-            var htmlUrl = "https://github.com/$OWNER_REPO/releases"
-            var notes = ""
-            val tagM = Regex("\"tag_name\"\\s*:\\s*\"([^\"]+)\"").find(body)
-            val urlM = Regex("\"html_url\"\\s*:\\s*\"([^\"]+)\"").find(body)
-            if (tagM != null) tag = tagM.groupValues[1].trimStart('v')
-            if (urlM != null) htmlUrl = urlM.groupValues[1]
-            val hasUpdate = tag.isNotBlank() && compareVersion(tag, current) > 0
-            Result(hasUpdate, current, tag, htmlUrl, notes)
-        } catch (e: Exception) {
-            Result(false, current, current, "", "", e.message ?: "网络错误")
+        } catch (_: Exception) { }
+        Result(false, current, current, "", error = "网络错误，请稍后再试")
+    }
+
+    private fun viaApi(current: String): Result? {
+        val conn = (URL(API).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"; connectTimeout = 8000; readTimeout = 8000
+            setRequestProperty("Accept", "application/vnd.github+json")
+            setRequestProperty("User-Agent", "AutoPilot-Android")
         }
+        val code = conn.responseCode
+        if (code != 200) {
+            conn.disconnect()
+            return if (code == 403) Result(false, current, current, "", error = "GitHub 接口限流，稍后再试") else null
+        }
+        val body = conn.inputStream.bufferedReader().use { it.readText() }
+        conn.disconnect()
+
+        val tag = Regex("""\x22tag_name\x22\s*:\s*\x22([^\x22]+)\x22""")
+            .find(body)?.groupValues?.get(1)?.trimStart('v') ?: return null
+        val htmlUrl = Regex("""\x22html_url\x22\s*:\s*\x22([^\x22]+)\x22""")
+            .find(body)?.groupValues?.get(1) ?: "https://github.com/$OWNER_REPO/releases"
+
+        // APK 资产（优先 release 且非 debug）
+        val assets = Regex("""\x22name\x22\s*:\s*\x22([^\x22]+\.apk)\x22[\s\S]*?\x22browser_download_url\x22\s*:\s*\x22([^\x22]+)\x22""")
+            .findAll(body)
+            .map { it.groupValues[1] to it.groupValues[2] }
+            .toList()
+        val chosen = assets.firstOrNull { it.first.contains("release", true) && !it.first.contains("debug", true) }
+            ?: assets.firstOrNull { !it.first.contains("debug", true) }
+            ?: assets.firstOrNull()
+
+        val hasUpdate = compareVersion(tag, current) > 0
+        return Result(hasUpdate, current, tag, htmlUrl, chosen?.second ?: "")
     }
 
     /** 通过 releases/latest 的 302 重定向拿到最新 tag（无需 API）。 */
@@ -73,12 +85,10 @@ object UpdateChecker {
         val loc = conn.getHeaderField("Location") ?: ""
         conn.disconnect()
         if (code in 300..399 && loc.isNotBlank()) {
-            // Location 形如 .../releases/tag/v0.3.0
             val m = Regex("/releases/tag/([^/?#]+)").find(loc)
             if (m != null) return m.groupValues[1].trimStart('v')
         }
         if (code == 200) {
-            // 极少数情况没有重定向：抓 final URL
             val m = Regex("/releases/tag/([^/?#]+)").find(conn.url.toString())
             if (m != null) return m.groupValues[1].trimStart('v')
         }
